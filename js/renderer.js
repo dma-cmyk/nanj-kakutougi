@@ -34,7 +34,17 @@
     render(state) {
       this.tick++;
       const ctx = this.ctx;
-      const { fighters, fx, roundTime, mode, hideHud, crowdCommentsEnabled } = state;
+      const {
+        fighters,
+        fx,
+        roundTime,
+        mode,
+        hideHud,
+        crowdCommentsEnabled,
+        localSlot = 0,
+        onlinePing = null,
+        onlineTransport = null,
+      } = state;
 
       ctx.save();
       ctx.clearRect(0, 0, STAGE.WIDTH, STAGE.HEIGHT);
@@ -81,7 +91,7 @@
           ? [fighters[1], fighters[0]]
           : [fighters[0], fighters[1]];
       for (const f of drawOrder) {
-        this._drawFighter(ctx, f);
+        this._drawFighter(ctx, f, mode, localSlot);
       }
 
       // 8. Speech bubbles attached to fighters (always on top of bodies)
@@ -116,7 +126,7 @@
 
       // 13. Classic Reference-Style Arcade HUD (HP, TIME, Names, Score, POW)
       if (!hideHud) {
-        this._drawArcadeHUD(ctx, fighters, roundTime, mode);
+        this._drawArcadeHUD(ctx, fighters, roundTime, mode, localSlot, onlinePing, onlineTransport);
       }
 
       // 14. Center Round / KO / Counter Banner
@@ -363,7 +373,7 @@
       }
     }
 
-    _drawFighter(ctx, f) {
+    _drawFighter(ctx, f, mode = 'vs_cpu', localSlot = 0) {
       const pose = f.getCurrentPose();
       const sp = window.NanJ.sprites.getPose(f.config.spriteSet, pose);
 
@@ -454,13 +464,15 @@
         ctx.fillText('💢', f.facing * 52 + jiggle, -225 - Math.abs(jiggle));
       }
 
-      // 1P / 2P small ground indicator tag so players never lose track in mirrors
+      // 1P / 2P (or YOU / RIVAL in online mode) ground indicator tag
       ctx.font = `900 13px ${FONT_ARCADE}`;
       ctx.textAlign = 'center';
-      ctx.fillStyle = f.slot === 0 ? '#fde047' : '#38bdf8';
+      const isOnline = mode === 'online';
+      const isMe = isOnline ? f.slot === localSlot : f.slot === 0;
+      ctx.fillStyle = isMe ? '#fde047' : '#38bdf8';
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 4;
-      const tag = f.slot === 0 ? '1P' : '2P';
+      const tag = isOnline ? (isMe ? 'YOU' : 'RIVAL') : f.slot === 0 ? '1P' : '2P';
       ctx.strokeText(tag, 0, 18);
       ctx.fillText(tag, 0, 18);
 
@@ -803,7 +815,7 @@
       }
     }
 
-    _drawArcadeHUD(ctx, fighters, roundTime, mode) {
+    _drawArcadeHUD(ctx, fighters, roundTime, mode, localSlot = 0, onlinePing = null, onlineTransport = null) {
       const p1 = fighters[0];
       const p2 = fighters[1];
 
@@ -825,17 +837,19 @@
       ctx.strokeStyle = '#091826';
       ctx.textBaseline = 'middle';
 
+      const p1Tag = mode === 'online' ? (localSlot === 0 ? '1P(YOU)' : '1P(NET)') : '1P';
+      const p2Tag = mode === 'online' ? (localSlot === 1 ? '2P(YOU)' : '2P(NET)') : mode === '2p' ? '2P' : 'CPU';
+
       ctx.textAlign = 'left';
-      const label1 = `1P: ${p1.config.nameEn} (${score1})`;
+      const label1 = `${p1Tag}: ${p1.config.nameEn} (${score1})`;
       ctx.strokeText(label1, 24, 28);
-      ctx.fillStyle = '#ffe599';
+      ctx.fillStyle = mode === 'online' && localSlot === 0 ? '#fde047' : '#ffe599';
       ctx.fillText(label1, 24, 28);
 
       ctx.textAlign = 'right';
-      const p2Tag = mode === '2p' ? '2P' : 'CPU';
       const label2 = `${p2Tag}: ${p2.config.nameEn} (${score2})`;
       ctx.strokeText(label2, STAGE.WIDTH - 24, 28);
-      ctx.fillStyle = '#ffe599';
+      ctx.fillStyle = mode === 'online' && localSlot === 1 ? '#fde047' : '#ffe599';
       ctx.fillText(label2, STAGE.WIDTH - 24, 28);
 
       // --- HEALTH BARS (Reference style: white border, dark navy bg, yellow + orange bar!) ---
@@ -911,6 +925,42 @@
       this._drawPowBar(ctx, 24, 654, p1, true);
       this._drawPowBar(ctx, STAGE.WIDTH - 24, 654, p2, false);
 
+      // Online connection & ping badge
+      if (mode === 'online') {
+        this._drawOnlineBadge(ctx, onlinePing, onlineTransport);
+      }
+
+      ctx.restore();
+    }
+
+    _drawOnlineBadge(ctx, pingMs, transport) {
+      const hasPing = typeof pingMs === 'number' && Number.isFinite(pingMs);
+      const tag = transport === 'p2p' ? 'ONLINE P2P' : 'ONLINE';
+      const label = hasPing ? `${tag} · ${pingMs}ms` : tag;
+      const dotColor = !hasPing ? '#38bdf8' : pingMs <= 70 ? '#4ade80' : pingMs <= 140 ? '#facc15' : '#f87171';
+      ctx.save();
+      ctx.font = `800 13px ${FONT_ARCADE}`;
+      const tw = ctx.measureText(label).width;
+      const bw = tw + 30;
+      const bh = 24;
+      const bx = STAGE.WIDTH / 2 - bw / 2;
+      const by = 104;
+      ctx.fillStyle = 'rgba(9, 24, 36, 0.78)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.lineWidth = 2;
+      roundRectPath(ctx, bx, by, bw, bh, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = dotColor;
+      ctx.beginPath();
+      ctx.arc(bx + 12, by + bh / 2, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#e0f2fe';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, bx + 22, by + bh / 2 + 0.5);
       ctx.restore();
     }
 

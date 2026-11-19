@@ -14,6 +14,7 @@
       this.bgmStep = 0;
       this.bgmMode = 'battle'; // 'title' | 'battle' | 'boss'
       this.unlocked = false;
+      this.playSink = null;
     }
 
     init() {
@@ -107,6 +108,7 @@
     }
 
     play(name) {
+      if (this.playSink) this.playSink(name);
       if (!this.unlocked || !this.ctx || this.muted) return;
       if (this.ctx.state !== 'running') return;
 

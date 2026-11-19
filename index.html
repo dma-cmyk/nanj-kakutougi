@@ -53,10 +53,16 @@
             <p class="title-tagline">拳と「レスバ返し」で完全論破せよ！</p>
 
             <div class="title-menu">
-              <button id="btn-quick-play" class="menu-btn primary pulse-btn" type="button">
-                <span class="btn-main-txt">🔥 すぐに対戦！(太郎 vs 次郎)</span>
-                <span class="btn-desc">ワンタップで名勝負スタート</span>
-              </button>
+              <div class="title-primary-row">
+                <button id="btn-quick-play" class="menu-btn primary pulse-btn" type="button">
+                  <span class="btn-main-txt">🔥 すぐに対戦！</span>
+                  <span class="btn-desc">太郎 vs 次郎 (CPU)</span>
+                </button>
+                <button id="btn-online" class="menu-btn online-btn" type="button">
+                  <span class="btn-main-txt">🌐 オンライン対戦</span>
+                  <span class="btn-desc">ランダム / 合言葉P2P</span>
+                </button>
+              </div>
               <div class="menu-row">
                 <button id="btn-arcade" class="menu-btn secondary" type="button">
                   <span class="btn-main-txt">🏆 大会モード</span>
@@ -115,6 +121,101 @@
           </div>
         </section>
 
+        <!-- ONLINE LOBBY OVERLAY -->
+        <section id="overlay-online" class="overlay-panel hidden">
+          <div class="arcade-card online-card">
+            <div class="select-header">
+              <h2>🌐 オンライン対戦 (P2P)</h2>
+              <button id="btn-online-back" class="mini-btn" type="button">← タイトルへ</button>
+            </div>
+
+            <div id="online-status-bar" class="online-status-bar status-idle">
+              <span class="online-status-dot"></span>
+              <span id="online-status-text" class="online-status-text">対戦方法を選んでください（サーバー登録不要・無料P2P）</span>
+              <span id="online-ping-pill" class="online-ping-pill hidden">-- ms</span>
+            </div>
+
+            <!-- Step 1: Matchmaking / Room Creation / Join -->
+            <div id="online-connect-panel" class="online-connect-panel">
+              <div class="online-quick-box">
+                <button id="btn-online-quickmatch" class="menu-btn online-btn" type="button">
+                  <span class="btn-main-txt">🎲 ランダムマッチ</span>
+                  <span class="btn-desc">待機中のプレイヤーと自動マッチング</span>
+                </button>
+                <button id="btn-online-create" class="menu-btn primary" type="button">
+                  <span class="btn-main-txt">🏠 ルームを作成</span>
+                  <span class="btn-desc">合言葉・招待URLを発行して友達と対戦</span>
+                </button>
+              </div>
+
+              <div class="online-join-row">
+                <input
+                  id="input-online-code"
+                  class="online-code-input"
+                  type="text"
+                  maxlength="32"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="合言葉 / ルームID を入力（例: KUSA72）"
+                />
+                <button id="btn-online-join" class="menu-btn secondary online-join-btn" type="button">
+                  <span class="btn-main-txt">🚪 参加する</span>
+                </button>
+              </div>
+
+              <!-- Active waiting / searching box -->
+              <div id="online-waiting-box" class="online-waiting-box hidden">
+                <div id="online-room-share" class="online-room-share hidden">
+                  <div class="online-code-label">ルームID（合言葉）</div>
+                  <div id="online-room-code-display" class="online-room-code-display">------</div>
+                  <div class="online-share-actions">
+                    <button id="btn-copy-invite" class="mini-btn accent-mini" type="button">🔗 招待URLをコピー</button>
+                    <button id="btn-copy-code" class="mini-btn" type="button">📋 IDをコピー</button>
+                  </div>
+                  <div id="online-copy-toast" class="online-copy-toast hidden">コピーしました！</div>
+                </div>
+                <button id="btn-online-cancel" class="mini-btn danger-mini" type="button">✕ 待機をキャンセル</button>
+              </div>
+            </div>
+
+            <!-- Step 2: Connected Character Select & Ready -->
+            <div id="online-ready-panel" class="online-ready-panel hidden">
+              <div class="online-vs-strip">
+                <div class="online-slot-card slot-p1">
+                  <div class="online-slot-head">
+                    <span class="select-col-label p1-label">1P (左)</span>
+                    <span id="online-p1-owner" class="online-owner-tag">YOU</span>
+                  </div>
+                  <div id="online-p1-name" class="online-slot-name">なんJ 太郎</div>
+                  <div id="online-p1-ready" class="online-ready-badge">選択中...</div>
+                </div>
+                <div class="online-vs-mid">
+                  <div class="online-vs-text">VS</div>
+                  <div id="online-room-tag" class="online-room-tag">ROOM: ----</div>
+                </div>
+                <div class="online-slot-card slot-p2">
+                  <div class="online-slot-head">
+                    <span class="select-col-label p2-label">2P (右)</span>
+                    <span id="online-p2-owner" class="online-owner-tag">RIVAL</span>
+                  </div>
+                  <div id="online-p2-name" class="online-slot-name">なんJ 次郎</div>
+                  <div id="online-p2-ready" class="online-ready-badge">選択中...</div>
+                </div>
+              </div>
+
+              <div class="online-pick-label">あなたのファイターを選択：</div>
+              <div id="roster-online" class="roster-grid online-roster-grid"></div>
+
+              <div class="online-ready-footer">
+                <button id="btn-online-ready" class="menu-btn primary" type="button">
+                  <span class="btn-main-txt">🥊 準備完了！(READY)</span>
+                </button>
+                <button id="btn-online-leave" class="mini-btn danger-mini" type="button">ルーム退出</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- RESULT OVERLAY -->
         <section id="overlay-result" class="overlay-panel hidden">
           <div class="arcade-card result-card">
@@ -135,6 +236,8 @@
               <ul class="benefits-list"></ul>
             </div>
 
+            <div id="result-online-note" class="result-online-note hidden"></div>
+
             <div class="result-actions">
               <button id="btn-result-next" class="menu-btn primary hidden" type="button">次の対戦へ ▶</button>
               <button id="btn-result-rematch" class="menu-btn primary" type="button">🔥 もう一回スレに戻る (再戦)</button>
@@ -150,6 +253,7 @@
         <section id="modal-pause" class="overlay-panel hidden">
           <div class="arcade-card pause-card">
             <h2>⏸ 実況一時停止</h2>
+            <p id="pause-online-note" class="pause-online-note hidden">※オンライン対戦中は試合が進行し続けます</p>
             <div class="pause-actions">
               <button id="btn-resume" class="menu-btn primary" type="button">▶ 試合に戻る</button>
               <button id="btn-restart-match" class="menu-btn secondary" type="button">🔄 最初からやり直す</button>
@@ -265,6 +369,7 @@
   <script src="./js/ai.js"></script>
   <script src="./js/input.js"></script>
   <script src="./js/renderer.js"></script>
+  <script src="./js/network.js"></script>
   <script src="./js/game.js"></script>
 </body>
 </html>

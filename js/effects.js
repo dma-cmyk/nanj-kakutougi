@@ -6,7 +6,12 @@
 
   class EffectsManager {
     constructor() {
+      this.eventSink = null;
       this.reset();
+    }
+
+    _emit(ev) {
+      if (this.eventSink) this.eventSink(ev);
     }
 
     reset() {
@@ -31,6 +36,7 @@
 
     shake(amount) {
       this.screenShake = Math.max(this.screenShake, amount);
+      this._emit(['sk', Math.round(amount * 10) / 10]);
     }
 
     triggerHitstop(frames) {
@@ -40,18 +46,21 @@
     triggerGong() {
       this.gongPulse = 1.0;
       this.crowdHype = Math.min(1, this.crowdHype + 0.65);
+      this._emit(['gn']);
     }
 
     triggerFlash(color = '#ffffff', alpha = 0.55) {
       this.flashColor = color;
       this.flashAlpha = Math.max(this.flashAlpha, alpha);
+      this._emit(['fl', color, Math.round(alpha * 100) / 100]);
     }
 
     showBanner(text, sub = '', duration = 70, color = '#ffb703') {
       this.banner = { text, sub, timer: duration, maxTimer: duration, color };
+      this._emit(['bn', text, sub, duration, color]);
     }
 
-    triggerSuperFlash(fighter) {
+    triggerSuperFlash(fighter, skipCrowd = false) {
       this.superFlash = {
         timer: 32,
         maxTimer: 32,
@@ -62,12 +71,16 @@
         spriteSet: fighter.config.spriteSet,
       };
       this.hitstop = 28;
-      this.shake(12);
+      this.screenShake = Math.max(this.screenShake, 12);
       this.crowdHype = 1.0;
-      this.spawnCrowdBurst(4);
+      this._emit(['sf', fighter.slot]);
+      if (!skipCrowd) {
+        this.spawnCrowdBurst(4);
+      }
     }
 
     spawnHitSpark(x, y, heavy = false, blocked = false, justGuard = false) {
+      this._emit(['sp', Math.round(x), Math.round(y), heavy ? 1 : 0, blocked ? 1 : 0, justGuard ? 1 : 0]);
       const count = justGuard ? 16 : heavy ? 18 : 10;
       const color = justGuard
         ? '#38bdf8'
@@ -107,6 +120,7 @@
     }
 
     spawnDust(x, y, dir = 0, count = 6) {
+      this._emit(['du', Math.round(x), Math.round(y), dir, count]);
       for (let i = 0; i < count; i++) {
         this.particles.push({
           x: x + (Math.random() - 0.5) * 34,
@@ -124,6 +138,7 @@
     }
 
     spawnGrassParticles(x, y, count = 8) {
+      this._emit(['gr', Math.round(x), Math.round(y), count]);
       const chars = ['草', 'w', 'W', '草ァ', '💢'];
       for (let i = 0; i < count; i++) {
         const ang = Math.random() * Math.PI * 2;
@@ -146,6 +161,7 @@
     }
 
     spawnPopText(x, y, text, color = '#ffe066', size = 34) {
+      this._emit(['pt', Math.round(x), Math.round(y), text, color, size]);
       this.popTexts.push({
         x,
         y,
@@ -163,6 +179,7 @@
     }
 
     spawnAfterimage(fighter, tint = 'rgba(255, 190, 60, 0.45)') {
+      this._emit(['ai', fighter.slot, tint]);
       this.afterimages.push({
         x: fighter.x,
         y: fighter.y,
@@ -215,6 +232,7 @@
     spawnCrowdComment(customText = null) {
       if (this.crowdComments.length >= 12) return;
       const text = customText || CROWD_COMMENTS[Math.floor(Math.random() * CROWD_COMMENTS.length)];
+      this._emit(['cc', text]);
       this.crowdComments.push({
         text,
         x: STAGE.WIDTH + 30,
@@ -235,7 +253,10 @@
       }
     }
 
-    update() {
+    update(options = null) {
+      const ignoreHitstop = !!(options && options.ignoreHitstop);
+      const clientVisualOnly = !!(options && options.clientVisualOnly);
+
       // Screen shake & flash always decay smoothly even during hitstop
       if (this.screenShake > 0) {
         this.screenShake = Math.max(0, this.screenShake * 0.84 - 0.2);
@@ -266,7 +287,7 @@
         if (c.x < -360) this.crowdComments.splice(i, 1);
       }
 
-      if (this.hitstop > 0) {
+      if (!ignoreHitstop && this.hitstop > 0) {
         this.hitstop--;
         return true; // Freeze gameplay simulation during hitstop
       }
@@ -299,6 +320,15 @@
       for (let i = this.afterimages.length - 1; i >= 0; i--) {
         this.afterimages[i].life--;
         if (this.afterimages[i].life <= 0) this.afterimages.splice(i, 1);
+      }
+
+      if (clientVisualOnly) {
+        // Light extrapolation between host snapshots; host owns creation & deletion
+        for (const pr of this.projectiles) {
+          pr.x += pr.vx;
+          pr.y += pr.vy;
+        }
+        return false;
       }
 
       for (let i = this.projectiles.length - 1; i >= 0; i--) {
