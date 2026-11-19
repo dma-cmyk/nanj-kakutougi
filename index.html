@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1f2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>なんJ格闘技大会 - レスバ×2D対戦格闘ゲーム</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700&family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Compact Arcade Utility Header -->
+    <header class="top-bar">
+      <div class="brand-pill">
+        <span class="brand-dot"></span>
+        <span>なんJ格闘技大会</span>
+      </div>
+      <div class="top-actions">
+        <button id="btn-bgm" class="util-btn" type="button" title="BGM切替">🎵ON</button>
+        <button id="btn-mute" class="util-btn" type="button" title="ミュート">🔊</button>
+        <button id="btn-pad-toggle" class="util-btn desktop-only" type="button" title="画面パッド表示切替">🎮パッド</button>
+        <button id="btn-help" class="util-btn" type="button" title="操作・技表">❓技表</button>
+        <button id="btn-pause" class="util-btn hidden" type="button" title="一時停止">⏸</button>
+      </div>
+    </header>
+
+    <!-- Main Stage + Overlays Container -->
+    <main class="stage-shell">
+      <div class="canvas-frame">
+        <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+        <!-- LOADING OVERLAY -->
+        <section id="overlay-loading" class="overlay-panel">
+          <div class="arcade-card loading-card">
+            <h1 class="title-logo-sm">なんJ格闘技大会</h1>
+            <div class="loading-bar-track">
+              <div id="loading-bar-fill" class="loading-bar-fill"></div>
+            </div>
+            <p id="loading-text" class="loading-text">素材読み込み中... 0%</p>
+          </div>
+        </section>
+
+        <!-- TITLE SCREEN OVERLAY -->
+        <section id="overlay-title" class="overlay-panel hidden">
+          <div class="title-wrap">
+            <div class="title-badge">リアルタイム感と独特のノリ、情報の早さと多様性</div>
+            <h1 class="title-logo">なんJ格闘技大会</h1>
+            <p class="title-tagline">拳と「レスバ返し」で完全論破せよ！</p>
+
+            <div class="title-menu">
+              <button id="btn-quick-play" class="menu-btn primary pulse-btn" type="button">
+                <span class="btn-main-txt">🔥 すぐに対戦！(太郎 vs 次郎)</span>
+                <span class="btn-desc">ワンタップで名勝負スタート</span>
+              </button>
+              <div class="menu-row">
+                <button id="btn-arcade" class="menu-btn secondary" type="button">
+                  <span class="btn-main-txt">🏆 大会モード</span>
+                  <span class="btn-desc">3連戦トーナメント</span>
+                </button>
+                <button id="btn-vs-cpu" class="menu-btn secondary" type="button">
+                  <span class="btn-main-txt">⚔️ CPU対戦</span>
+                  <span class="btn-desc">キャラ＆難易度選択</span>
+                </button>
+                <button id="btn-vs-2p" class="menu-btn secondary" type="button">
+                  <span class="btn-main-txt">👥 2P対戦</span>
+                  <span class="btn-desc">1台のPCで対戦</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="title-tip">
+              💡 <strong>必勝テク：</strong>相手の煽り吹き出しに合わせて<strong>「レスバ」</strong>を押すと<strong>「お前が効いてる定期」カウンター</strong>発動！
+            </div>
+          </div>
+        </section>
+
+        <!-- CHARACTER SELECT OVERLAY -->
+        <section id="overlay-select" class="overlay-panel hidden">
+          <div class="arcade-card select-card">
+            <div class="select-header">
+              <h2 id="select-mode-title">⚔️ CPU フリー対戦</h2>
+              <button id="btn-select-back" class="mini-btn" type="button">← 戻る</button>
+            </div>
+
+            <div class="select-columns">
+              <div class="select-col">
+                <div class="select-col-label p1-label">1P ファイター</div>
+                <div id="roster-p1" class="roster-grid"></div>
+              </div>
+              <div id="select-col-p2" class="select-col">
+                <div class="select-col-label p2-label">CPU 対戦相手</div>
+                <div id="roster-p2" class="roster-grid"></div>
+              </div>
+            </div>
+
+            <div id="select-diff-row" class="diff-row">
+              <span class="diff-label">CPU強さ:</span>
+              <div class="diff-btns">
+                <button class="diff-btn" data-diff="easy" type="button">初見さん</button>
+                <button class="diff-btn active" data-diff="normal" type="button">なんJ民</button>
+                <button class="diff-btn" data-diff="hard" type="button">猛虎弁ガチ勢</button>
+              </div>
+            </div>
+
+            <div class="select-footer">
+              <button id="btn-select-start" class="menu-btn primary" type="button">
+                <span class="btn-main-txt">🥊 実況開始 (FIGHT!!)</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- RESULT OVERLAY -->
+        <section id="overlay-result" class="overlay-panel hidden">
+          <div class="arcade-card result-card">
+            <h2 id="result-title" class="result-title win">🏆 YOU WIN!!</h2>
+            <p id="result-subtitle" class="result-subtitle"></p>
+
+            <div class="result-hero">
+              <img id="result-portrait" class="result-portrait" src="" alt="Result" />
+              <div class="result-speech-wrap">
+                <div id="result-quote" class="result-quote"></div>
+                <div id="result-score" class="result-score">SCORE: 003450</div>
+              </div>
+            </div>
+
+            <!-- Hilarious Reference Signboard Lose Rewards! -->
+            <div id="result-lose-benefits" class="lose-benefits hidden">
+              <div class="benefits-header">📜 敗北特典を獲得しました！（看板公約）</div>
+              <ul class="benefits-list"></ul>
+            </div>
+
+            <div class="result-actions">
+              <button id="btn-result-next" class="menu-btn primary hidden" type="button">次の対戦へ ▶</button>
+              <button id="btn-result-rematch" class="menu-btn primary" type="button">🔥 もう一回スレに戻る (再戦)</button>
+              <div class="result-sub-actions">
+                <button id="btn-result-select" class="mini-btn" type="button">キャラ選択</button>
+                <button id="btn-result-title" class="mini-btn" type="button">タイトルへ</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PAUSE MODAL -->
+        <section id="modal-pause" class="overlay-panel hidden">
+          <div class="arcade-card pause-card">
+            <h2>⏸ 実況一時停止</h2>
+            <div class="pause-actions">
+              <button id="btn-resume" class="menu-btn primary" type="button">▶ 試合に戻る</button>
+              <button id="btn-restart-match" class="menu-btn secondary" type="button">🔄 最初からやり直す</button>
+              <button id="btn-quit-title" class="menu-btn secondary" type="button">🏠 タイトルへ戻る</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- HELP / COMMAND LIST MODAL -->
+        <section id="modal-help" class="overlay-panel hidden">
+          <div class="arcade-card help-card">
+            <div class="select-header">
+              <h2>📖 操作方法 & 技表</h2>
+              <button id="btn-help-close" class="mini-btn" type="button">✕ 閉じる</button>
+            </div>
+            <div class="help-grid">
+              <div class="help-box">
+                <h3>⚔️ 基本アクション</h3>
+                <ul>
+                  <li><strong>弱 (J / Z)</strong>：最速パンチ。連打でコンボ！</li>
+                  <li><strong>強 (K / X)</strong>：強キック。<code>前+強</code>で突進、<code>下+強</code>で足払い！</li>
+                  <li><strong>レスバ (L / C)</strong>：煽り吹き出し砲！当てると相手が<strong>「💢効いてる」</strong>状態（被ダメ+25%）に！</li>
+                  <li><strong>ガード (Shift / U)</strong>：攻撃を防ぐ。直前ガードで<strong>JUST GUARD (効いてないが？)</strong>！</li>
+                  <li><strong>必殺 (Space / I)</strong>：POW50%で<strong>EX技</strong>、100%で<strong>超必殺奥義</strong>！50%未満は気合チャージ！</li>
+                </ul>
+              </div>
+              <div class="help-box">
+                <h3>🔥 レスバ返し (超重要!)</h3>
+                <p>相手の煽り吹き出しが飛んできた瞬間や、相手が煽りポーズ中に<strong>「レスバ」</strong>を押すと…</p>
+                <p class="help-highlight">「お前が効いてる定期」特大カウンター発動！！</p>
+                <p>相手の煽りを打ち消し、特大ダメージ＋POW大幅獲得！</p>
+                <h3>💻 PC 2P対戦キー</h3>
+                <p class="key-small">
+                  <strong>1P:</strong> WASD移動 / F弱 G強 Hレスバ Rガード T必殺<br />
+                  <strong>2P:</strong> 矢印移動 / J弱 K強 Lレスバ Uガード I必殺
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Desktop Keyboard Legend -->
+      <div class="desktop-legend">
+        <span><strong>移動:</strong> WASD / 矢印 (2回押しダッシュ)</span>
+        <span><strong>弱:</strong> J / Z</span>
+        <span><strong>強:</strong> K / X (前/下で変化)</span>
+        <span><strong>レスバ:</strong> L / C</span>
+        <span><strong>ガード:</strong> Shift / U</span>
+        <span><strong>必殺:</strong> Space / I</span>
+      </div>
+    </main>
+
+    <!-- SMARTPHONE / TOUCH ARCADE CONTROLLER DECK -->
+    <section id="touch-controls" class="touch-controls" aria-label="タッチコントローラー">
+      <div class="portrait-command-bar">
+        <div class="cmd-chip"><strong>煽(レスバ)</strong> 吹き出し攻撃＆カウンター</div>
+        <div class="cmd-chip"><strong>前+強</strong> 突進打撃</div>
+        <div class="cmd-chip"><strong>下+強</strong> 足払い</div>
+        <div class="cmd-chip"><strong>直前防</strong> 効いてないが？</div>
+      </div>
+
+      <div class="touch-deck-row">
+        <!-- Left: Virtual Slide Stick -->
+        <div class="touch-left">
+          <div id="touch-stick" class="touch-stick" role="application" aria-label="移動スティック">
+            <div class="stick-ring">
+              <span class="dir-arrow up">▲</span>
+              <span class="dir-arrow down">▼</span>
+              <span class="dir-arrow left">◀</span>
+              <span class="dir-arrow right">▶</span>
+            </div>
+            <div id="stick-knob" class="stick-knob"></div>
+          </div>
+          <div class="stick-hint">スライドで移動・ジャンプ</div>
+        </div>
+
+        <!-- Right: 5 Ergonomic Color-Coded Fighting Buttons -->
+        <div class="touch-right">
+          <div class="btn-cluster">
+            <button class="pad-btn btn-guard" data-game-btn="guard" type="button">
+              <span class="btn-kanji">防</span>
+              <span class="btn-sub">ガード</span>
+            </button>
+            <button class="pad-btn btn-resba" data-game-btn="resba" type="button">
+              <span class="btn-kanji">煽</span>
+              <span class="btn-sub">レスバ</span>
+            </button>
+            <button id="btn-touch-special" class="pad-btn btn-special" data-game-btn="special" type="button">
+              <span class="btn-kanji">必</span>
+              <span class="btn-sub">気合</span>
+            </button>
+            <button class="pad-btn btn-light" data-game-btn="light" type="button">
+              <span class="btn-kanji">弱</span>
+              <span class="btn-sub">パンチ</span>
+            </button>
+            <button class="pad-btn btn-heavy" data-game-btn="heavy" type="button">
+              <span class="btn-kanji">強</span>
+              <span class="btn-sub">キック</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Scripts in clean dependency order (works on GitHub Pages, local HTTP, AND file://) -->
+  <script src="./js/constants.js"></script>
+  <script src="./js/audio.js"></script>
+  <script src="./js/sprites.js"></script>
+  <script src="./js/effects.js"></script>
+  <script src="./js/fighter.js"></script>
+  <script src="./js/ai.js"></script>
+  <script src="./js/input.js"></script>
+  <script src="./js/renderer.js"></script>
+  <script src="./js/game.js"></script>
+</body>
+</html>
