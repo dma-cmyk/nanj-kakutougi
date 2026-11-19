@@ -317,7 +317,6 @@
 
     update(input, opponent, fx, sound, canControl) {
       this.animTick++;
-      this.stateTimer++;
       if (this.invulnTimer > 0) this.invulnTimer--;
       if (this.tiltTimer > 0) this.tiltTimer--;
       if (this.hitFlash > 0) this.hitFlash--;
@@ -467,6 +466,7 @@
         }
 
         case 'dash': {
+          this.stateTimer++;
           if (this.stateTimer % 3 === 0) fx.spawnAfterimage(this, 'rgba(255, 196, 70, 0.35)');
           if (this.stateTimer >= 12) {
             this.state = 'idle';
@@ -476,6 +476,7 @@
         }
 
         case 'backstep': {
+          this.stateTimer++;
           if (this.stateTimer % 3 === 0) fx.spawnAfterimage(this, 'rgba(120, 210, 255, 0.35)');
           if (this.stateTimer >= 14 && this.isGrounded()) {
             this.state = 'idle';
@@ -537,6 +538,7 @@
         }
 
         case 'victory': {
+          this.stateTimer++;
           this.vx *= 0.75;
           if (this.stateTimer % 36 === 0 && this.isGrounded()) {
             this.scaleX = 0.92;
@@ -557,15 +559,18 @@
 
       if (this.y >= STAGE.GROUND_Y) {
         this.y = STAGE.GROUND_Y;
-        if (wasAir && this.vy > 3) {
-          this.scaleX = 1.16;
-          this.scaleY = 0.84;
-          fx.spawnDust(this.x, this.y, 0, 5);
+        if (wasAir) {
+          if (this.vy > 3) {
+            this.scaleX = 1.16;
+            this.scaleY = 0.84;
+            fx.spawnDust(this.x, this.y, 0, 5);
+          }
           if (this.state === 'jump' || (this.state === 'attack' && (this.moveKey === 'airLight' || this.moveKey === 'airHeavy'))) {
             this.state = 'idle';
             this.currentMove = null;
+            this.moveKey = null;
             this.vx *= 0.4;
-          } else if (this.state === 'knockdown' || this.state === 'ko') {
+          } else if (this.vy > 3 && (this.state === 'knockdown' || this.state === 'ko')) {
             fx.shake(6);
             sound.play('light');
           }
